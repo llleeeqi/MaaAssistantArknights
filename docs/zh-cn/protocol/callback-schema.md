@@ -495,8 +495,14 @@ typedef void(ASST_CALL* AsstCallback)(int msg, const char* details, void* custom
 
 - `VisionDump`
   通用视觉导出（实验性）。用于外部 AI 编排，`details` 字段结构如下：
+  - `timestamp_ms` (number, required): 事件时间戳（毫秒）。
   - `screen_tag` (string, required): 当前命中的任务/界面标签。
   - `task` (string, required): 命中的任务名。
+  - `algorithm` (string, required): 识别算法类型。
+  - `action` (string, required): 对应动作类型。
+  - `reco_type` (string, required): 识别结果类型。
+  - `image_width` (number, optional): 当前图像宽度。
+  - `image_height` (number, optional): 当前图像高度。
   - `hit_rect` (array<number>, required): 命中区域，格式 `[x, y, width, height]`。
   - `action_point` (object, required): 建议点击点，包含 `x` 与 `y`。
   - `texts` (array, required): OCR 文本候选（可能为空）。
