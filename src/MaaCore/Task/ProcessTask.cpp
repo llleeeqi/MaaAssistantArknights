@@ -1,6 +1,7 @@
 #include "ProcessTask.h"
 
 #include <chrono>
+#include <cstdlib>
 #include <random>
 #include <unordered_set>
 
@@ -263,7 +264,10 @@ ProcessTask::NodeStatus ProcessTask::run_task(const HitDetail& hits)
         { "result", hits.reco_detail != nullptr ? *hits.reco_detail : json::object {} },
     };
 
-    callback(AsstMsg::SubTaskExtraInfo, make_vision_dump_info(hits));
+    if (const char* vision_dump_env = std::getenv("MAA_VISION_DUMP");
+        vision_dump_env != nullptr && std::string_view(vision_dump_env) == "1") {
+        callback(AsstMsg::SubTaskExtraInfo, make_vision_dump_info(hits));
+    }
 
     callback(AsstMsg::SubTaskStart, info);
     // 允许插件停用ProcessTask
@@ -347,15 +351,28 @@ json::value ProcessTask::make_vision_dump_info(const HitDetail& hits) const
     json::value info = basic_info_with_what("VisionDump");
 
     json::object details;
+    auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                      std::chrono::system_clock::now().time_since_epoch())
+                      .count();
+    details["timestamp_ms"] = now_ms;
     details["screen_tag"] = m_last_task_name;
     details["task"] = hits.task_ptr != nullptr ? hits.task_ptr->name : std::string {};
+    details["algorithm"] = hits.task_ptr != nullptr ? enum_to_string(hits.task_ptr->algorithm) : std::string {};
+    details["action"] = hits.task_ptr != nullptr ? enum_to_string(hits.task_ptr->action) : std::string {};
     details["hit_rect"] = rect_to_bbox(hits.rect);
     details["action_point"] = center_point(hits.rect);
+    details["reco_type"] = "Unknown";
+
+    if (hits.image != nullptr) {
+        details["image_width"] = hits.image->cols;
+        details["image_height"] = hits.image->rows;
+    }
 
     json::array texts;
     json::array buttons;
 
     if (auto text = std::dynamic_pointer_cast<TextRect>(hits.reco_detail); text != nullptr) {
+        details["reco_type"] = "TextRect";
         json::object t = static_cast<json::object>(*text);
         t["bbox"] = rect_to_bbox(text->rect);
         texts.emplace_back(t);
@@ -370,6 +387,7 @@ json::value ProcessTask::make_vision_dump_info(const HitDetail& hits) const
         buttons.emplace_back(std::move(b));
     }
     else if (auto match = std::dynamic_pointer_cast<MatchRect>(hits.reco_detail); match != nullptr) {
+        details["reco_type"] = "MatchRect";
         json::object b;
         b["id"] = hits.task_ptr != nullptr ? hits.task_ptr->name : std::string {};
         b["text"] = match->templ_name;
@@ -380,6 +398,7 @@ json::value ProcessTask::make_vision_dump_info(const HitDetail& hits) const
         buttons.emplace_back(std::move(b));
     }
     else if (auto feature = std::dynamic_pointer_cast<FeatureMatchRect>(hits.reco_detail); feature != nullptr) {
+        details["reco_type"] = "FeatureMatchRect";
         json::object b;
         b["id"] = hits.task_ptr != nullptr ? hits.task_ptr->name : std::string {};
         b["text"] = "feature_match";

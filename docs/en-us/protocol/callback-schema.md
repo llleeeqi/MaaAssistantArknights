@@ -576,6 +576,43 @@ Todo
   ]
   ```
 
+- `VisionDump`
+  Generic vision export (experimental), intended for external AI orchestration.
+
+  ```json
+  {
+    "screen_tag": "main_menu", // Current matched task/screen tag
+    "task": "InfrastBegin", // Matched task name
+    "algorithm": "OcrDetect", // Recognition algorithm
+    "action": "ClickSelf", // Action type
+    "reco_type": "TextRect", // Recognition result type
+    "timestamp_ms": 1710000000000,
+    "image_width": 1920,
+    "image_height": 1080,
+    "hit_rect": [100, 200, 260, 248], // [x, y, width, height]
+    "action_point": { "x": 230, "y": 324 }, // Suggested click point
+    "texts": [
+      {
+        "text": "公开招募", // "Recruit"
+        "score": 0.98,
+        "rect": [100, 200, 260, 248],
+        "bbox": [100, 200, 260, 248]
+      }
+    ],
+    "buttons": [
+      {
+        "id": "InfrastBegin",
+        "text": "公开招募", // "Recruit"
+        "x": 230,
+        "y": 324,
+        "bbox": [100, 200, 260, 248],
+        "score": 0.98
+      }
+    ],
+    "raw_result": {}
+  }
+  ```
+
 - `UnsupportedLevel`  
   Auto combat, unsupported stage name
 
