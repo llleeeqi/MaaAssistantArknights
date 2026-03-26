@@ -263,6 +263,8 @@ ProcessTask::NodeStatus ProcessTask::run_task(const HitDetail& hits)
         { "result", hits.reco_detail != nullptr ? *hits.reco_detail : json::object {} },
     };
 
+    callback(AsstMsg::SubTaskExtraInfo, make_vision_dump_info(hits));
+
     callback(AsstMsg::SubTaskStart, info);
     // 允许插件停用ProcessTask
     if (!m_enable) {
@@ -330,6 +332,70 @@ ProcessTask::NodeStatus ProcessTask::run_task(const HitDetail& hits)
     }
 
     return NodeStatus::Success;
+}
+
+json::value ProcessTask::make_vision_dump_info(const HitDetail& hits) const
+{
+    auto rect_to_bbox = [](const Rect& rect) -> json::array {
+        return json::array { rect.x, rect.y, rect.width, rect.height };
+    };
+
+    auto center_point = [](const Rect& rect) -> json::object {
+        return json::object { { "x", rect.x + rect.width / 2 }, { "y", rect.y + rect.height / 2 } };
+    };
+
+    json::value info = basic_info_with_what("VisionDump");
+
+    json::object details;
+    details["screen_tag"] = m_last_task_name;
+    details["task"] = hits.task_ptr != nullptr ? hits.task_ptr->name : std::string {};
+    details["hit_rect"] = rect_to_bbox(hits.rect);
+    details["action_point"] = center_point(hits.rect);
+
+    json::array texts;
+    json::array buttons;
+
+    if (auto text = std::dynamic_pointer_cast<TextRect>(hits.reco_detail); text != nullptr) {
+        json::object t = static_cast<json::object>(*text);
+        t["bbox"] = rect_to_bbox(text->rect);
+        texts.emplace_back(t);
+
+        json::object b;
+        b["id"] = hits.task_ptr != nullptr ? hits.task_ptr->name : std::string {};
+        b["text"] = text->text;
+        b["bbox"] = rect_to_bbox(text->rect);
+        b["x"] = text->rect.x + text->rect.width / 2;
+        b["y"] = text->rect.y + text->rect.height / 2;
+        b["score"] = text->score;
+        buttons.emplace_back(std::move(b));
+    }
+    else if (auto match = std::dynamic_pointer_cast<MatchRect>(hits.reco_detail); match != nullptr) {
+        json::object b;
+        b["id"] = hits.task_ptr != nullptr ? hits.task_ptr->name : std::string {};
+        b["text"] = match->templ_name;
+        b["bbox"] = rect_to_bbox(match->rect);
+        b["x"] = match->rect.x + match->rect.width / 2;
+        b["y"] = match->rect.y + match->rect.height / 2;
+        b["score"] = match->score;
+        buttons.emplace_back(std::move(b));
+    }
+    else if (auto feature = std::dynamic_pointer_cast<FeatureMatchRect>(hits.reco_detail); feature != nullptr) {
+        json::object b;
+        b["id"] = hits.task_ptr != nullptr ? hits.task_ptr->name : std::string {};
+        b["text"] = "feature_match";
+        b["bbox"] = rect_to_bbox(feature->rect);
+        b["x"] = feature->rect.x + feature->rect.width / 2;
+        b["y"] = feature->rect.y + feature->rect.height / 2;
+        b["score"] = feature->count;
+        buttons.emplace_back(std::move(b));
+    }
+
+    details["texts"] = std::move(texts);
+    details["buttons"] = std::move(buttons);
+    details["raw_result"] = hits.reco_detail != nullptr ? *hits.reco_detail : json::object {};
+
+    info["details"] = std::move(details);
+    return info;
 }
 
 // 保证 first 为 Success 或 Runout 时 second 不为 nullptr

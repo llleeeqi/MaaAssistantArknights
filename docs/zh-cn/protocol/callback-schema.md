@@ -493,6 +493,16 @@ typedef void(ASST_CALL* AsstCallback)(int msg, const char* details, void* custom
     - `potential` (number, required): 干员潜能 [1, 6]。
     - `rarity` (number, required): 干员稀有度 [1, 6]。
 
+- `VisionDump`
+  通用视觉导出（实验性）。用于外部 AI 编排，`details` 字段结构如下：
+  - `screen_tag` (string, required): 当前命中的任务/界面标签。
+  - `task` (string, required): 命中的任务名。
+  - `hit_rect` (array<number>, required): 命中区域，格式 `[x, y, width, height]`。
+  - `action_point` (object, required): 建议点击点，包含 `x` 与 `y`。
+  - `texts` (array, required): OCR 文本候选（可能为空）。
+  - `buttons` (array, required): 按钮候选（可能为空），每项包含 `id/text/x/y/bbox/score`。
+  - `raw_result` (object, required): 原始识别结果（透传）。
+
 - `UnsupportedLevel`  
   自动抄作业，不支持的关卡名。`details` 字段为空。
 

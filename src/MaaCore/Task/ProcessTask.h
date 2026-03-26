@@ -66,6 +66,7 @@ protected:
     NodeStatus run_action(const HitDetail& hits) const;
     NodeStatus run_task(const HitDetail& hits);
     std::pair<NodeStatus, TaskConstPtr> find_and_run_task(const TaskList& list);
+    json::value make_vision_dump_info(const HitDetail& hits) const;
 
     TimesLimitData calc_time_limit(TaskConstPtr task) const;
     int calc_post_delay(TaskConstPtr task) const;
